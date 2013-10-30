@@ -1,0 +1,7 @@
+// Shorthand for border-radius mixins from bourbon
+@mixin border-radius ($amount) {
+  @include border-top-radius($amount);
+  @include border-bottom-radius($amount);
+  @include border-left-radius($amount);
+  @include border-right-radius($amount);
+}
