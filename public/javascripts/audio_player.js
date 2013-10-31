@@ -94,13 +94,15 @@ var AudioPlayer = (function ($) {
     var model = Model.create(source),
         view = View.create(source);
 
-    view.el.on('ubxd-player:toggle-play-state', model.togglePlayState);
-
     function renderAnimationFrame () {
       view.updatePlayhead(model.percentagePlayed());
       requestAnimationFrame(renderAnimationFrame);
     }
-    requestAnimationFrame(renderAnimationFrame);
+
+    window.onloadedmetadata = (function () {
+      view.el.on('ubxd-player:toggle-play-state', model.togglePlayState);
+      requestAnimationFrame(renderAnimationFrame);
+    })();
   };
 
   return {
