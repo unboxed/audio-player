@@ -95,20 +95,31 @@ var AudioPlayer = (function ($) {
 
   })($),
 
-  create = function (el) {
-    var source = el.getElementsByTagName('audio')[0],
-        model = Model.create(source),
-        view = View.create(source);
+  Controller = (function () {
 
-    function renderAnimationFrame () {
-      view.updatePlayhead(model.percentagePlayed());
-      requestAnimationFrame(renderAnimationFrame);
+    var create = function (model, view) {
+      function renderAnimationFrame () {
+        view.updatePlayhead(model.percentagePlayed());
+        requestAnimationFrame(renderAnimationFrame);
+      }
+
+      window.onloadedmetadata = (function () {
+        view.el.on('ubxd-player:toggle-play-state', model.togglePlayState);
+        requestAnimationFrame(renderAnimationFrame);
+      })();
+    };
+
+    return {
+      create: create
     }
 
-    window.onloadedmetadata = (function () {
-      view.el.on('ubxd-player:toggle-play-state', model.togglePlayState);
-      requestAnimationFrame(renderAnimationFrame);
-    })();
+  })(),
+
+  create = function (el) {
+    var source      = el.getElementsByTagName('audio')[0],
+        model       = Model.create(source),
+        view        = View.create(source),
+        controller  = Controller.create(model, view);
   };
 
   return {
