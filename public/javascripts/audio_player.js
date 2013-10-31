@@ -60,18 +60,23 @@ var AudioPlayer = (function ($) {
 
     var create = function (source) {
 
-      var $el          = $('<div class="player"></player>'),
+      var $el          = $('<div class="player"></div>'),
           $buttonEl    = $('<button><span class="play">Play</span></button>'),
           $waveformEl  = $('<div class="waveform"></div>'),
           $playheadEl  = $('<div class="playhead" style="width: 0%;"></div>'),
 
       updatePlayhead = function (percentage) {
         $playheadEl.css({ width: percentage + '%' });
+      },
+
+      togglePlayingState = function () {
+        $el.trigger('ubxd-player:toggle-play-state');
+        var $icon = $buttonEl.find('span');
+        $icon.toggleClass('pause');
+        $icon.toggleClass('play');
       };
 
-      $buttonEl.click(function () {
-        $el.trigger('ubxd-player:toggle-play-state');
-      });
+      $buttonEl.click(togglePlayingState);
 
       $waveformEl.append($playheadEl);
       $el.append([$buttonEl, $waveformEl]);
@@ -90,8 +95,9 @@ var AudioPlayer = (function ($) {
 
   })($),
 
-  create = function (source) {
-    var model = Model.create(source),
+  create = function (el) {
+    var source = el.getElementsByTagName('audio')[0],
+        model = Model.create(source),
         view = View.create(source);
 
     function renderAnimationFrame () {
