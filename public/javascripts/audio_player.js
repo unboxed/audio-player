@@ -96,6 +96,11 @@ var AudioPlayer = (function ($) {
     view.el.on('ubxd-player:toggle-play-state', model.togglePlayState);
 
     $(source).after(view.el);
+    function renderAnimationFrame () {
+      view.updatePlayhead(model.percentagePlayed());
+      requestAnimationFrame(renderAnimationFrame);
+    }
+    requestAnimationFrame(renderAnimationFrame);
   };
 
   return {
