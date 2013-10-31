@@ -58,7 +58,7 @@ var AudioPlayer = (function ($) {
 
   View = (function ($) {
 
-    var create = function () {
+    var create = function (source) {
 
       var $el          = $('<div class="player"></player>'),
           $buttonEl    = $('<button><span class="play">Play</span></button>'),
@@ -75,6 +75,7 @@ var AudioPlayer = (function ($) {
 
       $waveformEl.append($playheadEl);
       $el.append([$buttonEl, $waveformEl]);
+      $(source).after($el);
 
       return {
         updatePlayhead: updatePlayhead,
@@ -91,11 +92,10 @@ var AudioPlayer = (function ($) {
 
   create = function (source) {
     var model = Model.create(source),
-        view = View.create();
+        view = View.create(source);
 
     view.el.on('ubxd-player:toggle-play-state', model.togglePlayState);
 
-    $(source).after(view.el);
     function renderAnimationFrame () {
       view.updatePlayhead(model.percentagePlayed());
       requestAnimationFrame(renderAnimationFrame);
