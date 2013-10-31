@@ -62,15 +62,22 @@ var AudioPlayer = (function ($) {
 
       var $el          = $('<div class="player"></player>'),
           $buttonEl    = $('<button><span class="play">Play</span></button>'),
-          $waveformEl  = $('<div class="waveform"></div>');
+          $waveformEl  = $('<div class="waveform"></div>'),
+          $playheadEl  = $('<div class="playhead" style="width: 0%;"></div>'),
+
+      updatePlayhead = function (percentage) {
+        $playheadEl.css({ width: percentage + '%' });
+      };
 
       $buttonEl.click(function () {
         $el.trigger('ubxd-player:toggle-play-state');
       });
 
+      $waveformEl.append($playheadEl);
       $el.append([$buttonEl, $waveformEl]);
 
       return {
+        updatePlayhead: updatePlayhead,
         el: $el
       }
 
