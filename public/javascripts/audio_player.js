@@ -6,22 +6,30 @@ var AudioPlayer = (function ($) {
 
     var create = function (soundSource) {
       var soundSource = soundSource,
-          isPlaying   = false,
+          playState   = 0,
+
+      isPlaying = function () {
+        if (playState === 0) {
+          return false;
+        } else if (playState === 1) {
+          return true;
+        }
+      },
 
       play = function () {
         console.log('playing');
         soundSource.play();
-        isPlaying = true;
+        playState = 1;
       },
 
       pause = function () {
         console.log('pausing');
         soundSource.pause();
-        isPlaying = false;
+        playState = 0;
       },
 
       togglePlayState = function () {
-        if (isPlaying === true) {
+        if (isPlaying()) {
           pause();
         } else {
           play();
