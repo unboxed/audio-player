@@ -34,10 +34,15 @@ var AudioPlayer = (function ($) {
         } else {
           play();
         }
+      },
+
+      percentagePlayed = function () {
+        return (soundSource.currentTime / soundSource.duration) * 100.0;
       };
 
       return {
         isPlaying: isPlaying,
+        percentagePlayed: percentagePlayed,
         play: play,
         pause: pause,
         togglePlayState: togglePlayState
