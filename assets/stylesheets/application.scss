@@ -50,16 +50,24 @@ button {
 }
 
 .waveform {
+  position: relative;
   display: block;
   margin: 10px;
   height: 80px;
   background-color: purple;
   overflow: hidden;
-}
 
-.playhead {
-  height: 100%;
-  background-color: black;
-  transition: height 0.05s ease;
-  opacity: 0.3;
+  canvas {
+    width: 100%;
+    height: 100%;
+  }
+
+  .playhead {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    background-color: black;
+    transition: height 0.05s ease;
+    opacity: 0.3;
+  }
 }

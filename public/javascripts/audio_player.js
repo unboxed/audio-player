@@ -4,9 +4,12 @@ var AudioPlayer = (function ($) {
 
   Model = (function () {
 
-    var create = function (soundSource) {
-      var soundSource = soundSource,
-          playState   = 0,
+    var create = function (buffer) {
+      var soundSource         = context.createBufferSource()
+          soundSource.buffer  = buffer,
+          playState           = 0,
+          startOffset         = 0,
+          startTime           = 0,
 
       isPlaying = function () {
         if (playState === 0) {
@@ -18,14 +21,19 @@ var AudioPlayer = (function ($) {
 
       play = function () {
         console.log('playing');
-        soundSource.play();
+        soundSource = context.createBufferSource();
+        soundSource.buffer = buffer;
+        soundSource.connect(context.destination);
+        soundSource.start(0, startOffset % buffer.duration);
         playState = 1;
+        startTime = context.currentTime;
       },
 
       pause = function () {
         console.log('pausing');
-        soundSource.pause();
+        soundSource.stop(0);
         playState = 0;
+        startOffset += context.currentTime - startTime;
       },
 
       togglePlayState = function () {
@@ -36,8 +44,14 @@ var AudioPlayer = (function ($) {
         }
       },
 
+      currentTime = function () {
+        if (isPlaying()) {
+          return (context.currentTime - startTime) + startOffset;
+        }
+      },
+
       percentagePlayed = function () {
-        return (soundSource.currentTime / soundSource.duration) * 100.0;
+        return (currentTime() / buffer.duration) * 100.0;
       };
 
       return {
@@ -58,12 +72,13 @@ var AudioPlayer = (function ($) {
 
   View = (function ($) {
 
-    var create = function (source) {
+    var create = function (rootEl, buffer) {
 
-      var $el          = $('<div class="player"></div>'),
-          $buttonEl    = $('<button><span class="play">Play</span></button>'),
-          $waveformEl  = $('<div class="waveform"></div>'),
-          $playheadEl  = $('<div class="playhead" style="width: 0%;"></div>'),
+      var $el             = $('<div class="player"></div>'),
+          $buttonEl       = $('<button><span class="play">Play/Pause</span></button>'),
+          $waveformEl     = $('<div class="waveform"></div>'),
+          $waveformCanvas = $('<canvas width="100%" height="100%">Just in case</canvas>'),
+          $playheadEl     = $('<div class="playhead" style="width: 0%;"></div>'),
 
       updatePlayhead = function (percentage) {
         $playheadEl.css({ width: percentage + '%' });
@@ -74,15 +89,47 @@ var AudioPlayer = (function ($) {
         var $icon = $buttonEl.find('span');
         $icon.toggleClass('pause');
         $icon.toggleClass('play');
+      },
+
+      drawWaveform = function () {
+        var data    = buffer.getChannelData(0),
+            width   = $waveformCanvas.width(),
+            height  = $waveformCanvas.height(),
+            step    = Math.floor( data.length / width ),
+            ctx     = $waveformCanvas[0].getContext('2d');
+
+        ctx.beginPath();
+        ctx.strokeStyle = 'white';
+        ctx.moveTo(0, 50);
+
+        function stepAverage (stepArray) {
+          var totalValueForStep = 0;
+          for (var i=0; i<stepArray.length; i++) {
+            totalValueForStep += stepArray[i];
+          }
+          return totalValueForStep / step;
+        }
+        for (var i=0; i < width; i++) {
+          var firstSampleIndex = i * step,
+              finalSampleIndex = firstSampleIndex + step,                   // This is the sample after the finalSampleIndex
+              stepArray        = data.subarray(i * step, finalSampleIndex); // slice is non inclusive for the latter vlue - wtfjs.com
+
+            var x = (i / width) * 100,
+                y = (stepAverage(stepArray) * 3000) + 50;
+            ctx.lineTo(x, y);
+        }
+        ctx.stroke();
       };
 
       $buttonEl.click(togglePlayingState);
 
-      $waveformEl.append($playheadEl);
+      $waveformEl.append($waveformCanvas, $playheadEl);
       $el.append([$buttonEl, $waveformEl]);
-      $(source).after($el);
+      $(rootEl).after($el);
+      drawWaveform()
 
       return {
+        drawWaveform: drawWaveform,
         updatePlayhead: updatePlayhead,
         el: $el
       }
@@ -97,7 +144,7 @@ var AudioPlayer = (function ($) {
 
   Controller = (function () {
 
-    var create = function (model, view) {
+    var create = function (source, model, view) {
       function renderAnimationFrame () {
         view.updatePlayhead(model.percentagePlayed());
         requestAnimationFrame(renderAnimationFrame);
@@ -115,11 +162,27 @@ var AudioPlayer = (function ($) {
 
   })(),
 
+  requestError = function () {
+    console.log('An error occurred requesting the audio file. We are sorry but this broke stuff!');
+  },
+
+  requestAndDecodeSource = function (uri, callback) {
+    var request = new XMLHttpRequest();
+    request.open('GET', uri, true);
+    request.responseType = 'arraybuffer';
+
+    request.onload = function () {
+      context.decodeAudioData(request.response, callback, requestError);
+    }
+    request.send();
+  },
+
   create = function (el) {
-    var source      = el.getElementsByTagName('audio')[0],
-        model       = Model.create(source),
-        view        = View.create(source),
-        controller  = Controller.create(model, view);
+    requestAndDecodeSource(el.getAttribute('data-source'), function (buffer) {
+      var model       = Model.create(buffer),
+          view        = View.create(el, buffer),
+          controller  = Controller.create(buffer, model, view);
+    });
   };
 
   return {
