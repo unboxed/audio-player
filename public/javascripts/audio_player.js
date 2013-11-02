@@ -77,7 +77,7 @@ var AudioPlayer = (function ($) {
       var $el             = $('<div class="player"></div>'),
           $buttonEl       = $('<button><span class="play">Play/Pause</span></button>'),
           $waveformEl     = $('<div class="waveform"></div>'),
-          $waveformCanvas = $('<canvas width="100%" height="100%">Just in case</canvas>'),
+          $waveformCanvas = $('<canvas width="200" height="80"></canvas>'),
           $playheadEl     = $('<div class="playhead" style="width: 0%;"></div>'),
 
       updatePlayhead = function (percentage) {
@@ -95,38 +95,41 @@ var AudioPlayer = (function ($) {
         var data    = buffer.getChannelData(0),
             width   = $waveformCanvas.width(),
             height  = $waveformCanvas.height(),
+            amp     = height / 2,
             step    = Math.floor( data.length / width ),
             ctx     = $waveformCanvas[0].getContext('2d');
 
-        ctx.beginPath();
-        ctx.strokeStyle = 'white';
-        ctx.moveTo(0, 50);
+        ctx.fillStyle = 'white';
 
-        function stepAverage (stepArray) {
-          var totalValueForStep = 0;
-          for (var i=0; i<stepArray.length; i++) {
-            totalValueForStep += stepArray[i];
-          }
-          return totalValueForStep / step;
-        }
         for (var i=0; i < width; i++) {
-          var firstSampleIndex = i * step,
-              finalSampleIndex = firstSampleIndex + step,                   // This is the sample after the finalSampleIndex
-              stepArray        = data.subarray(i * step, finalSampleIndex); // slice is non inclusive for the latter vlue - wtfjs.com
+          var min = 1.0;
+          var max = -1.0;
+          for (j=0; j<step; j++) {
+              var datum = data[(i*step)+j];
+              if (datum < min)
+                  min = datum;
+              if (datum > max)
+                  max = datum;
+          }
 
-            var x = (i / width) * 100,
-                y = (stepAverage(stepArray) * 3000) + 50;
-            ctx.lineTo(x, y);
+          ctx.fillRect(i,(1+min)*amp,1,Math.max(1,(max-min)*amp));
         }
-        ctx.stroke();
+      },
+
+      resizeCanvas = function () {
+        $waveformCanvas.attr('width', $waveformEl.width());   //max width
+        $waveformCanvas.attr('height', $waveformEl.height()); //max height
+        drawWaveform();
       };
 
       $buttonEl.click(togglePlayingState);
 
       $waveformEl.append($waveformCanvas, $playheadEl);
       $el.append([$buttonEl, $waveformEl]);
-      $(rootEl).after($el);
-      drawWaveform()
+      $(rootEl).append($el);
+
+      $(window).resize(resizeCanvas);
+      resizeCanvas();
 
       return {
         drawWaveform: drawWaveform,
